@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Select Tools</title>
+</head>
+<body>
+    <h2>Select Tools</h2>
+    <!-- Tool selection form -->
+    <form th:action="@{/user-tools}" method="post">
+        <input type="hidden" name="userId" th:value="${user.id}" />
+
+        <label for="toolName">Select Tool:</label>
+        <select id="toolName" name="toolName">
+            <option th:each="tool : ${tools}"
+                    th:value="${tool.toolName}"
+                    th:text="${tool.toolName}"
+                    th:disabled="${#lists.contains(userOwnedTools, tool.id)}">
+            </option>
+        </select>
+
+        <button type="submit">Add Tool</button>
+    </form>
+    <!-- Display user's current tools -->
+    <h3>Your Current Tools:</h3>
+    <div th:each="userTool : ${userTools}">
+        <div style="display: flex; align-items: center; margin-bottom: 10px;">
+            <span th:text="${userTool.tool.toolName}" style="margin-right: 10px;"></span>
+            <!-- Remove button next to the tool name -->
+            <form th:action="@{/remove-tool}" method="post">
+                <input type="hidden" name="userId" th:value="${user.id}" />
+                <input type="hidden" name="toolName" th:value="${userTool.tool.toolName}" />
+                <button type="submit">Remove</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
