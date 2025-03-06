@@ -53,11 +53,14 @@ public class ToolService {
         userToolRepository.delete(userTool);
     }
 
-
-
     // Get users tools
     public List<UserTool> getUserTools(Long userId) {
         return userToolRepository.findByUserId(userId);
+    }
+
+    // Get users activated tools
+    public List<UserTool> getActiveUserTools(Long userId) {
+        return userToolRepository.findByUserIdAndActivatedTrue(userId);
     }
 
     // Get all tools

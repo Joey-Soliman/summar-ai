@@ -64,7 +64,7 @@ public class DashboardController {
             }
         }
 
-        return "redirect:/dashboard";  // Redirect after updating
+        return "redirect:/report/generate";  // Redirect after updating
     }
 
 }

@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Generated Report</title>
+</head>
+<body>
+    <h1>Your Generated Report</h1>
+    <p th:text="${reportData}"></p> <!-- ✅ Displays report data -->
+
+    <a href="/report/download">Download Report</a> <!-- ✅ Add a download button -->
+</body>
+</html>
