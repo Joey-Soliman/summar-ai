@@ -12,7 +12,10 @@ public class Tool {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+
     private String toolName; // Jira, Google Calendar, etc.
+
+    private String provider;
 
     @OneToMany(mappedBy = "tool", cascade = CascadeType.ALL)
     private List<UserTool> userTools;
@@ -28,5 +31,11 @@ public class Tool {
 
     public Long getId() {
         return id;
+    }
+
+    public String getProvider() { return provider; }
+
+    public void setProvider(String provider) {
+        this.provider = provider;
     }
 }

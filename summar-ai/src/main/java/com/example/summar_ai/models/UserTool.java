@@ -2,6 +2,8 @@ package com.example.summar_ai.models;
 
 import jakarta.persistence.*;
 
+import java.time.Instant;
+
 @Entity
 @Table(name = "user_tools")
 public class UserTool {
@@ -20,6 +22,11 @@ public class UserTool {
     private Tool tool;
 
     private boolean activated;
+
+    // OAuth token fields
+    private String accessToken;
+    private String refreshToken;
+    private Instant expiresAt; // Store expiration time
 
     // Constructors
     public UserTool() {}
@@ -43,4 +50,24 @@ public class UserTool {
 
     public boolean isActivated() { return activated; }
     public void setActivated(boolean activated) { this.activated = activated; }
+
+    public void setAccessToken(String accessToken) {
+        this.accessToken = accessToken;
+    }
+
+    public String getRefreshToken() {
+        return refreshToken;
+    }
+
+    public void setRefreshToken(String refreshToken) {
+        this.refreshToken = refreshToken;
+    }
+
+    public Instant getExpiresAt() {
+        return expiresAt;
+    }
+
+    public void setExpiresAt(Instant expiresAt) {
+        this.expiresAt = expiresAt;
+    }
 }

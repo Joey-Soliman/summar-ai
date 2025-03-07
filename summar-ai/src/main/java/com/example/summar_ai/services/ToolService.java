@@ -29,7 +29,7 @@ public class ToolService {
     // Add tool to user
     public void addToolToUser(Long userId, String toolName) {
         User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
-        Tool tool = toolRepository.findByToolName(toolName);
+        Tool tool = toolRepository.findByToolName(toolName).orElseThrow(() -> new RuntimeException("Tool not found"));
         if (tool == null) {
             throw new RuntimeException("Tool not found");
         }
@@ -42,7 +42,7 @@ public class ToolService {
 
     // Remove tool from user
     public void removeToolFromUser(Long userId, String toolName) {
-        Tool tool = toolRepository.findByToolName(toolName);
+        Tool tool = toolRepository.findByToolName(toolName).orElseThrow(() -> new RuntimeException("Tool not found"));
         if (tool == null) {
             throw new RuntimeException("Tool not found");
         }
@@ -77,5 +77,9 @@ public class ToolService {
             userTool.setActivated(isActivated);
             userToolRepository.save(userTool);
         }
+    }
+
+    public Tool findByToolName(String toolName) {
+        return toolRepository.findByToolName(toolName).orElseThrow(() -> new RuntimeException("Tool not found"));
     }
 }

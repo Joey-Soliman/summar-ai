@@ -9,7 +9,7 @@ import java.util.Optional;
 
 public interface ToolRepository extends JpaRepository<Tool, Long> {
     // Find tool by name
-    Tool findByToolName(String toolName);
+    Optional<Tool> findByToolName(String toolName);
 
     // Find toolId by name
     @Query("SELECT t.id FROM Tool t WHERE t.toolName = :toolName")

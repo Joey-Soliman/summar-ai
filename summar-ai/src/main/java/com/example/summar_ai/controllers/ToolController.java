@@ -53,16 +53,26 @@ public class ToolController {
         model.addAttribute("userTools", userTools);
         model.addAttribute("userOwnedTools", userOwnedTools);
 
+        // Initialize selectedTool to null initially (no tool selected yet)
+        model.addAttribute("selectedTool", null);
+
         return "user-tools"; // Render the user-tools.html page
     }
 
     // Handle tool selection by the user
     @PostMapping("/user-tools")
-    public String selectToolForUser(@RequestParam("toolName") String toolName, @RequestParam("userId") Long userId) {
-        // Add selected tool to the user
-        toolService.addToolToUser(userId, toolName);
+    public String selectToolForUser(@RequestParam("toolName") String toolName, @RequestParam("userId") Long userId, Model model) {
+        // Get the tool from the service by toolName
+        Tool selectedTool = toolService.findByToolName(toolName);
 
-        return "redirect:/user-tools"; // Redirect back to the tool selection page after selecting a tool
+        // Add selected tool to the user
+        toolService.addToolToUser(userId, selectedTool.getToolName());
+
+        // Set the selectedTool so we can use it in the view for OAuth flow
+        model.addAttribute("selectedTool", selectedTool);
+
+        // Redirect to initiate OAuth authorization for the selected tool
+        return "redirect:/oauth2/authorization/" + selectedTool.getProvider() + "?toolName=" + selectedTool.getToolName();
     }
 
     // Handle tool removal by the user
