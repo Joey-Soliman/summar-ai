@@ -8,7 +8,10 @@
 <body>
     <h2>Select Tools</h2>
     <!-- Tool selection form -->
-    <form th:action="'/oauth2/authorization/' + ${selectedTool.provider}" method="get">
+    <form th:action="@{/user-tools}" method="post">
+        <input type="hidden" name="userId" th:value="${user.id}" />
+
+        <label for="toolName">Select Tool:</label>
         <select id="toolName" name="toolName">
             <option th:each="tool : ${tools}"
                     th:value="${tool.toolName}"
@@ -16,6 +19,7 @@
                     th:disabled="${#lists.contains(userOwnedTools, tool.id)}">
             </option>
         </select>
+
         <button type="submit">Add Tool</button>
     </form>
 

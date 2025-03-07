@@ -11,15 +11,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
+import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
 
 import java.time.Instant;
 
-@RestController
-@RequestMapping("/oauth2")
+@Controller
 public class GoogleOAuthController {
 
     @Autowired
@@ -34,14 +31,22 @@ public class GoogleOAuthController {
     @Autowired
     private OAuth2AuthorizedClientService authorizedClientService;
 
-    @GetMapping("/callback/google")
-    public ResponseEntity<String> googleCallback(
-            @RequestParam("code") String code,
-            OAuth2AuthenticationToken authentication) {
-        System.out.println("In GoogleOAuthController");
+    @GetMapping("/oauth2/success")
+    public String googleCallback(OAuth2AuthenticationToken authentication) {
+        System.out.println("In GoogleOAuthController - OAuth Success");
+
+        // Print authentication details
+        System.out.println("Authentication Name: " + authentication.getName());
+        System.out.println("Authorities: " + authentication.getAuthorities());
+        // Check attributes returned by OAuth2 provider
+        authentication.getPrincipal().getAttributes().forEach((key, value) -> {
+            System.out.println("🔹 " + key + ": " + value);
+        });
 
         // Get the authenticated user's ID
         String username = authentication.getName();
+        System.out.println("Extracted Username: " + username);
+
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -72,10 +77,7 @@ public class GoogleOAuthController {
             userToolRepository.save(userTool);
         }
 
-        return ResponseEntity.ok("Google OAuth successful!");
+        // Redirect to user-tools page
+        return "redirect:/user-tools";
     }
 }
-
-
-
-
