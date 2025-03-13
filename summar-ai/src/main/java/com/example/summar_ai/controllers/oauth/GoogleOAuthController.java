@@ -6,15 +6,21 @@ import com.example.summar_ai.models.UserTool;
 import com.example.summar_ai.repositories.ToolRepository;
 import com.example.summar_ai.repositories.UserRepository;
 import com.example.summar_ai.repositories.UserToolRepository;
+import com.example.summar_ai.services.AuthService;
+import com.example.summar_ai.services.ToolService;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.Base64;
 
 @Controller
 public class GoogleOAuthController {
@@ -31,24 +37,27 @@ public class GoogleOAuthController {
     @Autowired
     private OAuth2AuthorizedClientService authorizedClientService;
 
+    private AuthService authService;
+
+    @Autowired
+    public GoogleOAuthController(AuthService authService) {
+        this.authService = authService;
+    }
+
     @GetMapping("/oauth2/success")
-    public String googleCallback(OAuth2AuthenticationToken authentication) {
+    public String googleCallback(OAuth2AuthenticationToken authentication, HttpSession session) {
         System.out.println("In GoogleOAuthController - OAuth Success");
+        System.out.println("Authentication: " + authentication);
+        System.out.println("Session ID after OAuth: " + session.getId());
 
-        // Print authentication details
-        System.out.println("Authentication Name: " + authentication.getName());
-        System.out.println("Authorities: " + authentication.getAuthorities());
-        // Check attributes returned by OAuth2 provider
-        authentication.getPrincipal().getAttributes().forEach((key, value) -> {
-            System.out.println("🔹 " + key + ": " + value);
-        });
+        // Try to restore original authentication from session
+        if (session.getAttribute("ORIGINAL_AUTH") != null) {
+            SecurityContextHolder.getContext().setAuthentication(
+                    (org.springframework.security.core.Authentication) session.getAttribute("ORIGINAL_AUTH"));
+        }
+        User user = authService.getAuthenticatedUser();
 
-        // Get the authenticated user's ID
-        String username = authentication.getName();
-        System.out.println("Extracted Username: " + username);
-
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        System.out.println("Authenticated User: " + (user != null ? user.getId() : "NULL"));
 
         // Get the tool (Google Calendar)
         Tool tool = toolRepository.findByToolName("Google Calendar")
@@ -56,12 +65,14 @@ public class GoogleOAuthController {
 
         // Load OAuth2 client
         OAuth2AuthorizedClient client = authorizedClientService.loadAuthorizedClient(
-                authentication.getAuthorizedClientRegistrationId(), username);
+                authentication.getAuthorizedClientRegistrationId(), authentication.getName());
 
         if (client != null) {
             String accessToken = client.getAccessToken().getTokenValue();
             String refreshToken = client.getRefreshToken() != null ? client.getRefreshToken().getTokenValue() : null;
             Instant expiresAt = client.getAccessToken().getExpiresAt();
+
+            System.out.println("Refresh Token: " + (refreshToken != null ? refreshToken : "NULL"));
 
             // Find or create UserTool entry
             UserTool userTool = userToolRepository.findByUserIdAndToolId(user.getId(), tool.getId())
@@ -76,6 +87,7 @@ public class GoogleOAuthController {
             // Save to the database
             userToolRepository.save(userTool);
         }
+        System.out.println("OAuth Finish");
 
         // Redirect to user-tools page
         return "redirect:/user-tools";

@@ -5,9 +5,12 @@ import com.example.summar_ai.models.UserTool;
 import com.example.summar_ai.services.ToolService;
 import com.example.summar_ai.services.AuthService;
 import com.example.summar_ai.models.User;
+import jakarta.servlet.http.HttpSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -61,7 +64,7 @@ public class ToolController {
 
     // Handle tool selection by the user
     @PostMapping("/user-tools")
-    public String selectToolForUser(@RequestParam("toolName") String toolName, @RequestParam("userId") Long userId, Model model) {
+    public String selectToolForUser(@RequestParam("toolName") String toolName, @RequestParam("userId") Long userId, Model model, HttpSession session) {
         // Get the tool from the service by toolName
         Tool selectedTool = toolService.findByToolName(toolName);
 
@@ -70,6 +73,9 @@ public class ToolController {
 
         // Set the selectedTool so we can use it in the view for OAuth flow
         model.addAttribute("selectedTool", selectedTool);
+
+        // store original authentication
+        session.setAttribute("ORIGINAL_AUTH", SecurityContextHolder.getContext().getAuthentication());
 
         // Redirect to initiate OAuth authorization for the selected tool
         return "redirect:/oauth2/authorization/" + selectedTool.getProvider() + "?toolName=" + selectedTool.getToolName();

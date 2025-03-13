@@ -2,6 +2,7 @@ package com.example.summar_ai.controllers;
 
 import com.example.summar_ai.services.AuthService;
 import com.example.summar_ai.models.User;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
@@ -26,10 +27,12 @@ public class AuthController {
 
     // GET request to show the login page
     @GetMapping("/login")
-    public String showLoginPage(@RequestParam(value = "error", required = false) String error, Model model) {
+    public String showLoginPage(@RequestParam(value = "error", required = false) String error, Model model, HttpSession session) {
         if (error != null) {
             model.addAttribute("error", "Invalid username or password. Please try again.");
         }
+        System.out.println("In Login");
+        System.out.println("Session ID before OAuth: " + session.getId());
         return "login";  // Returns login.html
     }
 
