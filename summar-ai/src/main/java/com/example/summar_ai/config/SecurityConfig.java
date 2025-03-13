@@ -9,10 +9,12 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.oauth2.client.web.AuthorizationRequestRepository;
-import org.springframework.security.oauth2.client.web.HttpSessionOAuth2AuthorizationRequestRepository;
-import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver;
 import org.springframework.security.web.SecurityFilterChain;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @Configuration
 public class SecurityConfig {
@@ -31,7 +33,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, ClientRegistrationRepository clientRegistrationRepository) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
@@ -50,7 +52,7 @@ public class SecurityConfig {
                         .defaultSuccessUrl("/oauth2/success", true)  // Redirect to success page after OAuth2 login
                         .authorizationEndpoint(authorization -> authorization
                                 .baseUri("/oauth2/authorization")  // Authorization endpoint for OAuth2 login
-                                .authorizationRequestRepository(authorizationRequestRepository()) // Ensure OAuth requests are stored properly
+                                .authorizationRequestResolver(customAuthorizationRequestResolver(clientRegistrationRepository)) // Custom resolver for refresh token
                         )
                 )
                 .logout(logout -> logout
@@ -63,8 +65,13 @@ public class SecurityConfig {
     }
 
     @Bean
-    public AuthorizationRequestRepository<OAuth2AuthorizationRequest> authorizationRequestRepository() {
-        return new HttpSessionOAuth2AuthorizationRequestRepository();
+    public DefaultOAuth2AuthorizationRequestResolver customAuthorizationRequestResolver(ClientRegistrationRepository clientRegistrationRepository) {
+        DefaultOAuth2AuthorizationRequestResolver resolver = new DefaultOAuth2AuthorizationRequestResolver(clientRegistrationRepository, "/oauth2/authorization");
+        resolver.setAuthorizationRequestCustomizer(customizer -> {
+            Map<String, Object> additionalParameters = new HashMap<>(customizer.build().getAdditionalParameters());
+            additionalParameters.put("access_type", "offline"); // Required to get refresh token
+            customizer.additionalParameters(additionalParameters);
+        });
+        return resolver;
     }
-
 }
