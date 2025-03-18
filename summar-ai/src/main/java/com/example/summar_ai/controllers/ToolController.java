@@ -74,11 +74,12 @@ public class ToolController {
         // Set the selectedTool so we can use it in the view for OAuth flow
         model.addAttribute("selectedTool", selectedTool);
 
-        // store original authentication
+        // store original authentication and tool
         session.setAttribute("ORIGINAL_AUTH", SecurityContextHolder.getContext().getAuthentication());
+        session.setAttribute("toolName", toolName);
 
         // Redirect to initiate OAuth authorization for the selected tool
-        return "redirect:/oauth2/authorization/" + selectedTool.getProvider() + "?toolName=" + selectedTool.getToolName();
+        return "redirect:/oauth2/authorization/" + selectedTool.getProvider();
     }
 
     // Handle tool removal by the user

@@ -42,9 +42,7 @@ public class OAuthController {
     }
 
     @GetMapping("/oauth2/success")
-    public String oauthCallback(OAuth2AuthenticationToken authentication,
-                                @RequestParam(name = "toolName") String toolName,
-                                HttpSession session) {
+    public String oauthCallback(OAuth2AuthenticationToken authentication, HttpSession session) {
         System.out.println("OAuth Success for provider: " + authentication.getAuthorizedClientRegistrationId());
 
         // Try to restore original authentication from session
@@ -57,7 +55,7 @@ public class OAuthController {
         System.out.println("Authenticated User: " + (user != null ? user.getId() : "NULL"));
 
         // Find the tool dynamically based on the toolName passed in URL
-        Tool tool = toolRepository.findByToolName(toolName)
+        Tool tool = toolRepository.findByToolName((String) session.getAttribute("toolName"))
                 .orElseThrow(() -> new RuntimeException("Tool not found"));
 
         // Load OAuth2 client

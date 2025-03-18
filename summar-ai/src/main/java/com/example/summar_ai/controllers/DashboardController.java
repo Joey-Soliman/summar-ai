@@ -48,7 +48,7 @@ public class DashboardController {
 
     @PostMapping("/dashboard/updateToolActivation")
     public String updateToolActivation(@RequestParam Map<String, String> activatedTools) {
-        logger.info("In updateToolActivation");
+        // logger.info("In updateToolActivation");
 
         // Iterate through the map to process activated tools
         for (Map.Entry<String, String> entry : activatedTools.entrySet()) {

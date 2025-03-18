@@ -24,7 +24,9 @@ public class UserTool {
     private boolean activated;
 
     // OAuth token fields
+    @Column(columnDefinition = "TEXT")
     private String accessToken;
+    @Column(columnDefinition = "TEXT")
     private String refreshToken;
     private Instant expiresAt; // Store expiration time
 
