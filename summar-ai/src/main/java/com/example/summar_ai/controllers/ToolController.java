@@ -64,7 +64,10 @@ public class ToolController {
 
     // Handle tool selection by the user
     @PostMapping("/user-tools")
-    public String selectToolForUser(@RequestParam("toolName") String toolName, @RequestParam("userId") Long userId, Model model, HttpSession session) {
+    public String selectToolForUser(@RequestParam("toolName") String toolName,
+                                    @RequestParam("userId") Long userId,
+                                    Model model,
+                                    HttpSession session) {
         // Get the tool from the service by toolName
         Tool selectedTool = toolService.findByToolName(toolName);
 

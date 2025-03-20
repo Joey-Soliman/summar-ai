@@ -69,7 +69,7 @@ public class SecurityConfig {
         DefaultOAuth2AuthorizationRequestResolver resolver = new DefaultOAuth2AuthorizationRequestResolver(clientRegistrationRepository, "/oauth2/authorization");
         resolver.setAuthorizationRequestCustomizer(customizer -> {
             Map<String, Object> additionalParameters = new HashMap<>(customizer.build().getAdditionalParameters());
-            // additionalParameters.put("prompt", "consent");
+            additionalParameters.put("prompt", "consent");
             additionalParameters.put("access_type", "offline"); // Required to get refresh token
             customizer.additionalParameters(additionalParameters);
         });

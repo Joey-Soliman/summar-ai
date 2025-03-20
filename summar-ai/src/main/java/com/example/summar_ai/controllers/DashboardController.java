@@ -5,15 +5,18 @@ import com.example.summar_ai.models.User;
 import com.example.summar_ai.models.UserTool;
 import com.example.summar_ai.services.AuthService;
 import com.example.summar_ai.services.ToolService;
+import jakarta.servlet.http.HttpSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
@@ -32,7 +35,12 @@ public class DashboardController {
     // Maps to /dashboard route after successful login
     @GetMapping("/dashboard")
     public String showDashboard(Model model) {
-        logger.info("In showDashboard");
+        // logger.info("In showDashboard");
+        // Get default dates
+        LocalDate today = LocalDate.now();
+        LocalDate lastWeek = today.minusDays(7);
+        model.addAttribute("startDate", lastWeek);
+        model.addAttribute("endDate", today);
 
         // Get the authenticated user via AuthService
         User user = authService.getAuthenticatedUser();
@@ -47,8 +55,14 @@ public class DashboardController {
     }
 
     @PostMapping("/dashboard/updateToolActivation")
-    public String updateToolActivation(@RequestParam Map<String, String> activatedTools) {
+    public String updateToolActivation(@RequestParam Map<String, String> activatedTools,
+                                       @RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+                                       @RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+                                       HttpSession session) {
         // logger.info("In updateToolActivation");
+        // Add date range to session
+        session.setAttribute("startDate", startDate);
+        session.setAttribute("endDate", endDate);
 
         // Iterate through the map to process activated tools
         for (Map.Entry<String, String> entry : activatedTools.entrySet()) {

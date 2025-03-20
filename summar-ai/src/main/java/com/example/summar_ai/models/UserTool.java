@@ -57,6 +57,8 @@ public class UserTool {
         this.accessToken = accessToken;
     }
 
+    public String getAccessToken() { return accessToken; }
+
     public String getRefreshToken() {
         return refreshToken;
     }
