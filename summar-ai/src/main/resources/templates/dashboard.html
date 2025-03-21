@@ -4,6 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard</title>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // Detect user's timezone
+            const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+            // Set the hidden input field value
+            document.getElementById("timeZoneInput").value = userTimeZone;
+        });
+    </script>
 </head>
 <body>
     <h1>Welcome to your Dashboard!</h1>
@@ -13,6 +22,9 @@
         <input type="date" id="startDate" name="startDate" th:value="${startDate}" required>
         <label for="endDate">End Date:</label>
         <input type="date" id="endDate" name="endDate" th:value="${endDate}" required>
+
+        <!-- Hidden input for timezone -->
+        <input type="hidden" id="timeZoneInput" name="timeZone">
 
         <h3>Your Current Tools:</h3>
         <div th:each="userTool : ${userTools}">

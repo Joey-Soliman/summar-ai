@@ -4,6 +4,7 @@ import com.example.summar_ai.models.UserTool;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -25,7 +26,7 @@ public class ReportService {
         }
     }
 
-    public CompletableFuture<String> collectDataFromTools(List<UserTool> activeTools) {
+    public CompletableFuture<String> collectDataFromTools(List<UserTool> activeTools, String startDate, String endDate) {
         // Create a list of CompletableFuture to run all the tool services concurrently
         List<CompletableFuture<String>> futures = new ArrayList<>();
 
@@ -35,7 +36,7 @@ public class ReportService {
 
             if (service != null) {
                 // Use @Async methods from the services
-                CompletableFuture<String> future = CompletableFuture.supplyAsync(() -> service.fetchData(userTool));
+                CompletableFuture<String> future = CompletableFuture.supplyAsync(() -> service.fetchData(userTool, startDate, endDate));
                 futures.add(future);
             }
         }

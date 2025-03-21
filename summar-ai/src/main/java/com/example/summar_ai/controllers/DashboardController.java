@@ -58,11 +58,13 @@ public class DashboardController {
     public String updateToolActivation(@RequestParam Map<String, String> activatedTools,
                                        @RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
                                        @RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+                                       @RequestParam("timeZone") String timeZone,
                                        HttpSession session) {
         // logger.info("In updateToolActivation");
         // Add date range to session
         session.setAttribute("startDate", startDate);
         session.setAttribute("endDate", endDate);
+        session.setAttribute("timeZone", timeZone);
 
         // Iterate through the map to process activated tools
         for (Map.Entry<String, String> entry : activatedTools.entrySet()) {

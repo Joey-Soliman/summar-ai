@@ -13,6 +13,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -33,17 +37,22 @@ public class ReportController {
 
     @GetMapping("/generate")
     public String generateReport(Model model, HttpSession session) {
-        // Retrieve date range
+        // Retrieve date range and time zone and convert to rfc3339 format
         LocalDate startDate = (LocalDate) session.getAttribute("startDate");
         LocalDate endDate = (LocalDate) session.getAttribute("endDate");
-        System.out.println("Start Date: " + startDate);
-        System.out.println("End Date: " + endDate);
+        ZoneId timeZone = ZoneId.of((String) session.getAttribute("timeZone"));
+        ZonedDateTime startDateTime = startDate.atStartOfDay(timeZone);
+        ZonedDateTime endDateTime = endDate.atTime(LocalTime.MAX).atZone(timeZone);
+        DateTimeFormatter rfc3339Formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX");
+        String formattedStart = startDateTime.format(rfc3339Formatter);
+        String formattedEnd = endDateTime.format(rfc3339Formatter);
 
+        // Get user and user's activated tools
         User user = authService.getAuthenticatedUser();
         List<UserTool> activeTools = userToolRepository.findByUserIdAndActivatedTrue(user.getId());
 
         // Collect data asynchronously from all tools
-        CompletableFuture<String> reportFuture = reportService.collectDataFromTools(activeTools);
+        CompletableFuture<String> reportFuture = reportService.collectDataFromTools(activeTools, formattedStart, formattedEnd);
 
         // Once the data is collected, set it to the model
         reportFuture.thenAccept(reportData -> {

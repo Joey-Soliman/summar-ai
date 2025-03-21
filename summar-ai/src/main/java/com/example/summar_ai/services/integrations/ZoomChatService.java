@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 public class ZoomChatService implements ToolDataService {
     @Async
     @Override
-    public String fetchData(UserTool userTool) {
+    public String fetchData(UserTool userTool, String startDate, String endDate) {
         return "Zoom Chat Data: [Recent chat messages, meetings, etc.]";
     }
 }

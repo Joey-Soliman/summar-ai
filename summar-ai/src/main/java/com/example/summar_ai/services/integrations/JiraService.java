@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 public class JiraService implements ToolDataService {
     @Async
     @Override
-    public String fetchData(UserTool userTool) {
+    public String fetchData(UserTool userTool, String startDate, String endDate) {
         return "Jira Data: [Example issues, tasks, etc.]";
     }
 }
