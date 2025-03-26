@@ -55,10 +55,10 @@ public class ReportController {
         CompletableFuture<String> reportFuture = reportService.collectDataFromTools(activeTools, formattedStart, formattedEnd);
 
         // Once the data is collected, set it to the model
-        reportFuture.thenAccept(reportData -> {
-            model.addAttribute("reportData", reportData);
-        });
+        String reportData = reportFuture.join();
 
+        model.addAttribute("reportData", reportData);
+        System.out.println(reportData);
         // Return the view (report)
         return "report";
     }

@@ -10,6 +10,8 @@ public class ZoomChatService implements ToolDataService {
     @Async
     @Override
     public String fetchData(UserTool userTool, String startDate, String endDate) {
-        return "Zoom Chat Data: [Recent chat messages, meetings, etc.]";
+        System.out.println("ZoomChatService fetching data...");
+        String response = "Zoom Chat Data: [Recent chat messages, meetings, etc.]";
+        return response;
     }
 }

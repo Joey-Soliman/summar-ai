@@ -2,6 +2,8 @@ package com.example.summar_ai.apihelpers;
 
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.http.server.reactive.HttpHandler;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
@@ -16,6 +18,7 @@ public class GoogleCalendarApiHelper {
     }
 
     public String getGoogleCalendarData(String accessToken, String calendarId, String startDate, String endDate) {
+
         // Construct the URL for the Google Calendar API (for example: getting events)
         // Example url: https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=2025-03-12T00:00:00Z&timeMax=2025-03-19T23:59:59Z
         String url = "https://www.googleapis.com/calendar/v3/calendars/" + calendarId + "/events?timeMin=" + startDate
@@ -27,10 +30,10 @@ public class GoogleCalendarApiHelper {
         // Create the HttpEntity with headers
         HttpEntity<String> entity = new HttpEntity<>(headers);
 
-        // Make the GET request with headers, and parse the response into an array of GoogleCalendarEvent objects
-        GoogleCalendarEvent[] events = restTemplate.exchange(url, HttpMethod.GET, entity, GoogleCalendarEvent[].class).getBody();
+        // Make the GET request
+        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, entity, String.class);
+        String jsonResponse = response.getBody();
 
-        // Make the API call and return the response
-        return restTemplate.getForObject(url, String.class);
+        return jsonResponse;
     }
 }

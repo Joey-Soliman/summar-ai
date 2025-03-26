@@ -27,11 +27,12 @@ public class ReportService {
     }
 
     public CompletableFuture<String> collectDataFromTools(List<UserTool> activeTools, String startDate, String endDate) {
+        System.out.println("Report Service: Collecting data from tools");
         // Create a list of CompletableFuture to run all the tool services concurrently
         List<CompletableFuture<String>> futures = new ArrayList<>();
 
         for (UserTool userTool : activeTools) {
-            String toolName = userTool.getTool().getToolName().toLowerCase();
+            String toolName = userTool.getTool().getToolName().replaceAll("\\s+", "").toLowerCase();
             ToolDataService service = toolServiceMap.get(toolName);
 
             if (service != null) {
@@ -47,8 +48,10 @@ public class ReportService {
                     StringBuilder report = new StringBuilder();
                     for (CompletableFuture<String> future : futures) {
                         try {
-                            report.append(future.get()).append("\n");
+                            String result = future.get();
+                            report.append(result).append("\n");
                         } catch (Exception e) {
+                            e.printStackTrace();
                             report.append("Error fetching data\n");
                         }
                     }

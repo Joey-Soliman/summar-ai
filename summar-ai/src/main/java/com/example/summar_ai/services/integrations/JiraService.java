@@ -10,7 +10,9 @@ public class JiraService implements ToolDataService {
     @Async
     @Override
     public String fetchData(UserTool userTool, String startDate, String endDate) {
-        return "Jira Data: [Example issues, tasks, etc.]";
+        System.out.println("JiraService fetching data...");
+        String response = "Jira Data: [Example issues, tasks, etc.]";
+        return response;
     }
 }
 
