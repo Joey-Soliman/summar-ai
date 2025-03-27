@@ -5,6 +5,7 @@ import com.example.summar_ai.models.UserTool;
 import com.example.summar_ai.repositories.UserToolRepository;
 import com.example.summar_ai.services.AuthService;
 import com.example.summar_ai.services.ReportService;
+import com.example.summar_ai.services.integrations.GPTService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -27,12 +28,15 @@ public class ReportController {
     private final ReportService reportService;
     private final AuthService authService;
     private final UserToolRepository userToolRepository;
+    private final GPTService gptService;
 
     @Autowired
-    public ReportController(ReportService reportService, AuthService authService, UserToolRepository userToolRepository) {
+    public ReportController(ReportService reportService, AuthService authService,
+                            UserToolRepository userToolRepository, GPTService gptService) {
         this.reportService = reportService;
         this.authService = authService;
         this.userToolRepository = userToolRepository;
+        this.gptService = gptService;
     }
 
     @GetMapping("/generate")
@@ -57,8 +61,13 @@ public class ReportController {
         // Once the data is collected, set it to the model
         String reportData = reportFuture.join();
 
-        model.addAttribute("reportData", reportData);
-        System.out.println(reportData);
+        // Send the data to chat GPT
+        String report = gptService.summarizeReport(reportData);
+
+        model.addAttribute("report", report);
+        System.out.println("reportData: " + reportData);
+        System.out.println("report: " + report);
+
         // Return the view (report)
         return "report";
     }
