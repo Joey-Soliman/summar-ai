@@ -102,7 +102,7 @@ public class ZoomApiHelper {
 
     // Get chat messages report
     public String getMessageReport(String accessToken, String sessionId, LocalDate startDate, LocalDate endDate, ZoneId timeZone) {
-        String url = ZOOM_API_BASE_URL + "/report/chat/sessions/:" + sessionId + "?from=" + formatDate(startDate) + "&to=" + formatDate(endDate);
+        String url = ZOOM_API_BASE_URL + "/report/chat/sessions/" + sessionId + "?from=" + formatDate(startDate) + "&to=" + formatDate(endDate);
 
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "Bearer " + accessToken);
