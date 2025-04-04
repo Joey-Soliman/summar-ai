@@ -45,28 +45,25 @@ public class ReportController {
         LocalDate startDate = (LocalDate) session.getAttribute("startDate");
         LocalDate endDate = (LocalDate) session.getAttribute("endDate");
         ZoneId timeZone = ZoneId.of((String) session.getAttribute("timeZone"));
-        ZonedDateTime startDateTime = startDate.atStartOfDay(timeZone);
-        ZonedDateTime endDateTime = endDate.atTime(LocalTime.MAX).atZone(timeZone);
-        DateTimeFormatter rfc3339Formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX");
-        String formattedStart = startDateTime.format(rfc3339Formatter);
-        String formattedEnd = endDateTime.format(rfc3339Formatter);
+
 
         // Get user and user's activated tools
         User user = authService.getAuthenticatedUser();
         List<UserTool> activeTools = userToolRepository.findByUserIdAndActivatedTrue(user.getId());
 
         // Collect data asynchronously from all tools
-        CompletableFuture<String> reportFuture = reportService.collectDataFromTools(activeTools, formattedStart, formattedEnd);
+        CompletableFuture<String> reportFuture = reportService.collectDataFromTools(activeTools, startDate, endDate, timeZone);
 
         // Once the data is collected, set it to the model
         String reportData = reportFuture.join();
 
         // Send the data to chat GPT
-        String report = gptService.summarizeReport(reportData);
 
-        model.addAttribute("report", report);
-        System.out.println("reportData: " + reportData);
-        System.out.println("report: " + report);
+        // String report = gptService.summarizeReport(reportData);
+        // model.addAttribute("report", report);
+        model.addAttribute("report", reportData);
+        // System.out.println("reportData: " + reportData);
+        // System.out.println("report: " + report);
 
         // Return the view (report)
         return "report";
