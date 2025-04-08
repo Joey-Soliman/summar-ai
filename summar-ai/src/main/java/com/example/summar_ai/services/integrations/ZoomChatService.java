@@ -33,7 +33,7 @@ public class ZoomChatService implements ToolDataService {
         }
 
         // Step 1: Get chat sessions
-        List<String> sessionIds = zoomApiHelper.getChatSessions(accessToken, startDate, endDate);
+        List<String> sessionIds = zoomApiHelper.getChatSessions(accessToken, startDate, endDate, timeZone);
         if (sessionIds == null || sessionIds.isEmpty()) {
             System.out.println("No contacts found.");
             return null;
@@ -48,7 +48,7 @@ public class ZoomChatService implements ToolDataService {
             try {
                 // 🔹 Throttle API calls (sleep 500ms)
                 Thread.sleep(1000);
-                String messages = zoomApiHelper.getMessageReport(accessToken, sessionId, startDate, endDate, timeZone);
+                String messages = zoomApiHelper.getChatMessages(accessToken, sessionId, startDate, endDate, timeZone);
                 allMessages.append(messages).append("\n");
                 System.out.println(messages);
             } catch (InterruptedException e) {
