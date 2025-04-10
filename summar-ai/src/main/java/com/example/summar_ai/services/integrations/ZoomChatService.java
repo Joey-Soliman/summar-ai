@@ -45,16 +45,9 @@ public class ZoomChatService implements ToolDataService {
         StringBuilder allMessages = new StringBuilder();
         for (String sessionId : sessionIds) {
             System.out.println("Looking for messages in session: " + sessionId);
-            try {
-                // 🔹 Throttle API calls (sleep 500ms)
-                Thread.sleep(1000);
-                String messages = zoomApiHelper.getChatMessages(accessToken, sessionId, startDate, endDate, timeZone);
-                allMessages.append(messages).append("\n");
-                System.out.println(messages);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt(); // Restore interrupted status
-                System.err.println("Thread sleep interrupted: " + e.getMessage());
-            }
+            String messages = zoomApiHelper.getChatMessages(accessToken, sessionId, startDate, endDate, timeZone);
+            allMessages.append(messages).append("\n");
+            System.out.println(messages);
         }
 
         return allMessages.toString();

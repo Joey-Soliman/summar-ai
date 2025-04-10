@@ -48,42 +48,47 @@ public class ZoomApiHelper {
         }
     }
 
-    // 🔹 Step 2: Get Messages for a Contact
     public String getChatMessages(String accessToken, String targetId, LocalDate startDate, LocalDate endDate, ZoneId timeZone) {
         List<String> allMessages = new ArrayList<>();
 
-        // Loop through each day between startDate and endDate
         for (LocalDate currentDate = startDate; !currentDate.isAfter(endDate); currentDate = currentDate.plusDays(1)) {
-            // Get the formatted date in the correct time zone
-            String formattedDate = formatDateInTimeZone(currentDate, timeZone);
+            try {
+                // 🔹 Throttle API calls (sleep 1 second)
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt(); // Restore interrupted status
+                System.err.println("Thread sleep interrupted during throttling: " + e.getMessage());
+            }
 
-            // Construct the API URL for this specific date
+            String formattedDate = formatDateInTimeZone(currentDate, timeZone);
             String url = ZOOM_API_BASE_URL + "/chat/users/me/messages?" + targetId + "&date=" + formattedDate;
 
-            // Set up HTTP request
             HttpHeaders headers = new HttpHeaders();
             headers.set("Authorization", "Bearer " + accessToken);
             headers.set("Content-Type", "application/json");
 
             HttpEntity<String> entity = new HttpEntity<>(headers);
-            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, entity, String.class);
 
-            // Check response and add messages to the list
-            if (response.getStatusCode() == HttpStatus.OK) {
-                allMessages.add(response.getBody());
-            } else {
-                System.err.println("Failed to fetch messages for recipient: " + targetId + " on " + formattedDate);
+            try {
+                ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, entity, String.class);
+                if (response.getStatusCode() == HttpStatus.OK) {
+                    allMessages.add(response.getBody());
+                } else {
+                    System.err.println("Failed to fetch messages for recipient: " + targetId + " on " + formattedDate);
+                }
+            } catch (Exception ex) {
+                System.err.println("Exception fetching messages for " + targetId + " on " + formattedDate + ": " + ex.getMessage());
             }
         }
 
-        // Combine all responses into one string (or return a list if needed)
         return String.join("\n", allMessages);
     }
+
 
     // Helper function to format date in the correct time zone
     private String formatDateInTimeZone(LocalDate date, ZoneId timeZone) {
         // Convert LocalDate to ZonedDateTime in the user's time zone
-        ZonedDateTime zonedDateTime = date.atStartOfDay(timeZone).atZoneSameInstant(ZoneOffset.UTC);
+        ZonedDateTime zonedDateTime = date.atStartOfDay(timeZone).withZoneSameInstant(ZoneOffset.UTC);
 
         // Format the date in the format Zoom API expects (ISO 8601)
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'");
@@ -93,7 +98,11 @@ public class ZoomApiHelper {
 
     // Get chat sessions
     public List<String> getChatSessions(String accessToken, LocalDate startDate, LocalDate endDate, ZoneId timeZone) {
-        String url = ZOOM_API_BASE_URL + "/chat/users/me/sessions";
+        // Format dates
+        String formattedStart = formatDateInTimeZone(startDate, timeZone);
+        String formattedEnd = formatDateInTimeZone(endDate, timeZone);
+
+        String url = ZOOM_API_BASE_URL + "/chat/users/me/sessions?from=" + formattedStart + "&to=" + formattedEnd;
 
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "Bearer " + accessToken);
@@ -123,7 +132,7 @@ public class ZoomApiHelper {
     // Helper function parse session json object for getChatSessions function
     private String getRecipientQueryParam(Map<String, Object> session, LocalDate startDate, LocalDate endDate, ZoneId timeZone) {
         String type = (String) session.get("type");
-        String lastMessageTimeStr = (String) session.get("last_message_time");
+        String lastMessageTimeStr = (String) session.get("last_message_sent_time");
 
         if (lastMessageTimeStr == null || type == null) {
             return null;
@@ -139,14 +148,12 @@ public class ZoomApiHelper {
             return null;
         }
 
-        if ("1".equals(type)) {
-            Map<String, Object> participant = (Map<String, Object>) session.get("participant");
-            String id = participant != null ? (String) participant.get("id") : null;
-            return id != null ? "to_contact=" + id : null;
-        } else if ("2".equals(type)) {
-            Map<String, Object> channel = (Map<String, Object>) session.get("channel");
-            String id = channel != null ? (String) channel.get("id") : null;
-            return id != null ? "to_channel=" + id : null;
+        if ("1:1".equals(type)) {
+            String email = (String) session.get("peer_contact_email");
+            return email != null ? "to_contact=" + email : null;
+        } else if ("groupchat".equals(type)) {
+            String channelId = (String) session.get("channel_id");
+            return channelId != null ? "to_channel=" + channelId : null;
         }
 
         return null;
