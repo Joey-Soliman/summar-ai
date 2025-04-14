@@ -24,7 +24,6 @@ public class GoogleCalendarService implements ToolDataService {
         System.out.println("GoogleCalendarService fetching data...");
 
         // Retrieve the access token for the authenticated user
-
         String accessToken = userTool.getAccessToken();
 
         // Fetch the Google Calendar data (you can customize what data you want)
