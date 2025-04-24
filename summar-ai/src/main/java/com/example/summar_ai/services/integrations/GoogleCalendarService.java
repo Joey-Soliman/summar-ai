@@ -28,7 +28,7 @@ public class GoogleCalendarService implements ToolDataService {
 
         // Fetch the Google Calendar data (you can customize what data you want)
         String calendarId = "primary"; // or get it from the userTool if needed
-        String response = googleCalendarApiHelper.getGoogleCalendarData(accessToken, calendarId, startDate, endDate, timeZone);
+        String response = googleCalendarApiHelper.getGoogleCalendarData(userTool, calendarId, startDate, endDate, timeZone);
 
 
         // Process and return the data

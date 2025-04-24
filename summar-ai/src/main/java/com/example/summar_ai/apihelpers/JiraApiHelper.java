@@ -15,13 +15,12 @@ import java.util.Map;
 public class JiraApiHelper {
 
     private final RestTemplate restTemplate = new RestTemplate();
-    private static final String JIRA_BASE_URL = "https://your-domain.atlassian.net";
 
     // In getUserIssuesForSite method
     public String getUserIssuesForSite(String accessToken, String siteUrl, String cloudId, LocalDate start, LocalDate end) {
         StringBuilder issuesString = new StringBuilder();
 
-        String accountId = getAccountId(accessToken);
+        String accountId = getAccountId(accessToken, siteUrl);
         String jql = String.format(
                 "(creator = \"accountid:%s\" OR assignee = \"accountid:%s\" OR reporter = \"accountid:%s\") " +
                         "AND ((created >= \"%s\" AND created <= \"%s\") " +
@@ -61,8 +60,8 @@ public class JiraApiHelper {
 
 
 
-    public String getAccountId(String accessToken) {
-        String url = "https://your-domain.atlassian.net/rest/api/3/myself";
+    public String getAccountId(String accessToken, String siteUrl) {
+        String url = siteUrl + "/rest/api/3/myself";
 
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "Bearer " + accessToken);
