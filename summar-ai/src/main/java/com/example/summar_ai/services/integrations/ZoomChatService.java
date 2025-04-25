@@ -25,15 +25,8 @@ public class ZoomChatService implements ToolDataService {
     public String fetchData(UserTool userTool, LocalDate startDate, LocalDate endDate, ZoneId timeZone) {
         System.out.println("ZoomChatService fetching data...");
 
-        // Get access token
-        String accessToken = userTool.getAccessToken();
-        if (accessToken == null || accessToken.isEmpty()) {
-            System.err.println("Error: Access token is missing for Zoom.");
-            return null;
-        }
-
         // Step 1: Get chat sessions
-        List<String> sessionIds = zoomApiHelper.getChatSessions(accessToken, startDate, endDate, timeZone);
+        List<String> sessionIds = zoomApiHelper.getChatSessions(userTool, startDate, endDate, timeZone);
         if (sessionIds == null || sessionIds.isEmpty()) {
             System.out.println("No contacts found.");
             return null;
@@ -45,7 +38,7 @@ public class ZoomChatService implements ToolDataService {
         StringBuilder allMessages = new StringBuilder();
         for (String sessionId : sessionIds) {
             System.out.println("Looking for messages in session: " + sessionId);
-            String messages = zoomApiHelper.getChatMessages(accessToken, sessionId, startDate, endDate, timeZone);
+            String messages = zoomApiHelper.getChatMessages(userTool, sessionId, startDate, endDate, timeZone);
             allMessages.append(messages).append("\n");
             System.out.println(messages);
         }

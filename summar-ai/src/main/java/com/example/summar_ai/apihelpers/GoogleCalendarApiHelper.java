@@ -2,7 +2,6 @@ package com.example.summar_ai.apihelpers;
 
 import com.example.summar_ai.models.UserTool;
 import com.example.summar_ai.repositories.UserToolRepository;
-import com.example.summar_ai.services.AuthService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
@@ -16,7 +15,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
+
 
 @Component
 public class GoogleCalendarApiHelper {
@@ -49,7 +48,7 @@ public class GoogleCalendarApiHelper {
                 userTool.setExpiresAt(Instant.parse(tokenData.get(1)));
                 userToolRepository.save(userTool);
             }
-            return fetchCalendarData(accessToken, calendarId, startDate, endDate, timeZone);
+            return fetchCalendarData(userTool, calendarId, startDate, endDate, timeZone);
         } catch (HttpClientErrorException.Unauthorized e) {
             System.out.println("refreshing token");
             // Refresh and retry once
@@ -60,11 +59,11 @@ public class GoogleCalendarApiHelper {
             userTool.setExpiresAt(Instant.now().plusSeconds(3600)); // Google tokens are usually 1 hour
             userToolRepository.save(userTool);
 
-            return fetchCalendarData(newAccessToken, calendarId, startDate, endDate, timeZone);
+            return fetchCalendarData(userTool, calendarId, startDate, endDate, timeZone);
         }
     }
 
-    private String fetchCalendarData(String accessToken, String calendarId, LocalDate startDate, LocalDate endDate, ZoneId timeZone) {
+    private String fetchCalendarData(UserTool userTool, String calendarId, LocalDate startDate, LocalDate endDate, ZoneId timeZone) {
         ZonedDateTime startDateTime = startDate.atStartOfDay(timeZone);
         ZonedDateTime endDateTime = endDate.atTime(LocalTime.MAX).atZone(timeZone);
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX");
@@ -76,11 +75,29 @@ public class GoogleCalendarApiHelper {
                 "/events?timeMin=" + formattedStart + "&timeMax=" + formattedEnd;
 
         HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", "Bearer " + accessToken);
+        headers.set("Authorization", "Bearer " + userTool.getAccessToken());
 
         HttpEntity<String> entity = new HttpEntity<>(headers);
-        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, entity, String.class);
-        return response.getBody();
+
+        try {
+            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, entity, String.class);
+            return response.getBody();
+        } catch (HttpClientErrorException e) {
+            if (e.getStatusCode() == HttpStatus.UNAUTHORIZED) {
+                // Token likely expired, try refreshing it
+                List<String> tokens = refreshAccessToken(userTool.getRefreshToken()); // implement this however your app works
+                String newAccessToken = tokens.get(0);
+                // Optionally update the saved token in your DB
+
+                // Retry the request with new token
+                headers.set("Authorization", "Bearer " + newAccessToken);
+                entity = new HttpEntity<>(headers);
+                ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, entity, String.class);
+                return response.getBody();
+            } else {
+                throw e; // rethrow if it's not a 401
+            }
+        }
     }
 
     private List<String> refreshAccessToken(String refreshToken) {

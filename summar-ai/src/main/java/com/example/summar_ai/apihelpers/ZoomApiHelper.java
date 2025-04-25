@@ -1,18 +1,21 @@
 package com.example.summar_ai.apihelpers;
 
+import com.example.summar_ai.dto.ZoomTokenResponse;
+import com.example.summar_ai.models.User;
+import com.example.summar_ai.models.UserTool;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
-import java.time.LocalDate;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 @Component
 public class ZoomApiHelper {
@@ -20,35 +23,17 @@ public class ZoomApiHelper {
     private static final String ZOOM_API_BASE_URL = "https://api.zoom.us/v2";
     private final RestTemplate restTemplate;
 
+    @Value("${spring.security.oauth2.client.registration.zoom.client-id}")
+    private String clientId;
+
+    @Value("${spring.security.oauth2.client.registration.zoom.client-secret}")
+    private String clientSecret;
+
     public ZoomApiHelper(RestTemplate restTemplate) {
         this.restTemplate = restTemplate;
     }
 
-    // 🔹 Step 1: Get Contact List
-    public List<String> getContacts(String accessToken) {
-        String url = ZOOM_API_BASE_URL + "/chat/users/me/contacts?type=external";
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", "Bearer " + accessToken);
-        headers.set("Content-Type", "application/json");
-
-        HttpEntity<String> entity = new HttpEntity<>(headers);
-        ResponseEntity<Map> response = restTemplate.exchange(url, HttpMethod.GET, entity, Map.class);
-
-        if (response.getStatusCode() == HttpStatus.OK) {
-            List<String> contactIds = new ArrayList<>();
-            List<Map<String, Object>> contacts = (List<Map<String, Object>>) response.getBody().get("contacts");
-            for (Map<String, Object> contact : contacts) {
-                contactIds.add((String) contact.get("id"));
-            }
-            return contactIds;
-        } else {
-            System.err.println("Failed to fetch contacts from Zoom.");
-            return null;
-        }
-    }
-
-    public String getChatMessages(String accessToken, String targetId, LocalDate startDate, LocalDate endDate, ZoneId timeZone) {
+    public String getChatMessages(UserTool userTool, String targetId, LocalDate startDate, LocalDate endDate, ZoneId timeZone) {
         List<String> allMessages = new ArrayList<>();
 
         for (LocalDate currentDate = startDate; !currentDate.isAfter(endDate); currentDate = currentDate.plusDays(1)) {
@@ -63,21 +48,25 @@ public class ZoomApiHelper {
             String formattedDate = formatDateInTimeZone(currentDate, timeZone);
             String url = ZOOM_API_BASE_URL + "/chat/users/me/messages?" + targetId + "&date=" + formattedDate;
 
-            HttpHeaders headers = new HttpHeaders();
-            headers.set("Authorization", "Bearer " + accessToken);
-            headers.set("Content-Type", "application/json");
+            // Use the executeWithRetry method here
+            String responseBody = executeWithRetry(userTool, accessToken -> {
+                HttpHeaders headers = new HttpHeaders();
+                headers.set("Authorization", "Bearer " + accessToken);
+                headers.set("Content-Type", "application/json");
 
-            HttpEntity<String> entity = new HttpEntity<>(headers);
+                HttpEntity<String> entity = new HttpEntity<>(headers);
 
-            try {
                 ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, entity, String.class);
                 if (response.getStatusCode() == HttpStatus.OK) {
-                    allMessages.add(response.getBody());
+                    return response.getBody();
                 } else {
                     System.err.println("Failed to fetch messages for recipient: " + targetId + " on " + formattedDate);
+                    return null;
                 }
-            } catch (Exception ex) {
-                System.err.println("Exception fetching messages for " + targetId + " on " + formattedDate + ": " + ex.getMessage());
+            });
+
+            if (responseBody != null) {
+                allMessages.add(responseBody);
             }
         }
 
@@ -97,37 +86,41 @@ public class ZoomApiHelper {
     }
 
     // Get chat sessions
-    public List<String> getChatSessions(String accessToken, LocalDate startDate, LocalDate endDate, ZoneId timeZone) {
+    public List<String> getChatSessions(UserTool userTool, LocalDate startDate, LocalDate endDate, ZoneId timeZone) {
         // Format dates
         String formattedStart = formatDateInTimeZone(startDate, timeZone);
         String formattedEnd = formatDateInTimeZone(endDate, timeZone);
 
         String url = ZOOM_API_BASE_URL + "/chat/users/me/sessions?from=" + formattedStart + "&to=" + formattedEnd;
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", "Bearer " + accessToken);
-        headers.set("Content-Type", "application/json");
+        return executeWithRetry(userTool, accessToken -> {
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("Authorization", "Bearer " + accessToken);
+            headers.set("Content-Type", "application/json");
 
-        HttpEntity<String> entity = new HttpEntity<>(headers);
-        ResponseEntity<Map> response = restTemplate.exchange(url, HttpMethod.GET, entity, Map.class);
+            HttpEntity<String> entity = new HttpEntity<>(headers);
 
-        if (response.getStatusCode() != HttpStatus.OK) {
-            System.err.println("Failed to fetch sessions from Zoom. Status: " + response.getStatusCode());
-            return Collections.emptyList();
-        }
-
-        List<Map<String, Object>> sessions = (List<Map<String, Object>>) response.getBody().get("sessions");
-        List<String> contactIds = new ArrayList<>();
-
-        for (Map<String, Object> session : sessions) {
-            String contactId = getRecipientQueryParam(session, startDate, endDate, timeZone);
-            if (contactId != null) {
-                contactIds.add(contactId);
+            // Perform API call inside lambda
+            ResponseEntity<Map> response = restTemplate.exchange(url, HttpMethod.GET, entity, Map.class);
+            if (response.getStatusCode() != HttpStatus.OK) {
+                System.err.println("Failed to fetch sessions from Zoom. Status: " + response.getStatusCode());
+                return Collections.emptyList();
             }
-        }
 
-        return contactIds;
+            List<Map<String, Object>> sessions = (List<Map<String, Object>>) response.getBody().get("sessions");
+            List<String> contactIds = new ArrayList<>();
+
+            for (Map<String, Object> session : sessions) {
+                String contactId = getRecipientQueryParam(session, startDate, endDate, timeZone);
+                if (contactId != null) {
+                    contactIds.add(contactId);
+                }
+            }
+
+            return contactIds;
+        });
     }
+
 
     // Helper function parse session json object for getChatSessions function
     private String getRecipientQueryParam(Map<String, Object> session, LocalDate startDate, LocalDate endDate, ZoneId timeZone) {
@@ -160,52 +153,51 @@ public class ZoomApiHelper {
     }
 
 
-    // Get chat sessions report
-    public List<String> getSessionsReport(String accessToken, LocalDate startDate, LocalDate endDate) {
-        String url = ZOOM_API_BASE_URL + "/report/chat/sessions?from=" + formatDate(startDate) + "&to=" + formatDate(endDate);
+    public <T> T executeWithRetry(UserTool userTool, Function<String, T> apiCall) {
+        try {
+            return apiCall.apply(userTool.getAccessToken());
+        } catch (HttpClientErrorException.Unauthorized e) {
+            // Access token expired, refresh it
+            String newAccessToken = refreshToken(userTool);
+            userTool.setAccessToken(newAccessToken); // Save to DB if needed
+            return apiCall.apply(newAccessToken);
+        }
+    }
 
+
+    private String refreshToken(UserTool userTool) {
+        String refreshToken = userTool.getRefreshToken();
         HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", "Bearer " + accessToken);
-        headers.set("Content-Type", "application/json");
+        headers.setBasicAuth(clientId, clientSecret);
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 
-        HttpEntity<String> entity = new HttpEntity<>(headers);
-        ResponseEntity<Map> response = restTemplate.exchange(url, HttpMethod.GET, entity, Map.class);
+        String body = "grant_type=refresh_token&refresh_token=" + refreshToken;
+        HttpEntity<String> request = new HttpEntity<>(body, headers);
 
-        if (response.getStatusCode() == HttpStatus.OK) {
-            List<String> sessionIds = new ArrayList<>();
-            List<Map<String, Object>> sessions = (List<Map<String, Object>>) response.getBody().get("sessions");
-            for (Map<String, Object> session : sessions) {
-                sessionIds.add((String) session.get("id"));
+        try {
+            ResponseEntity<ZoomTokenResponse> response = restTemplate.postForEntity(
+                    "https://zoom.us/oauth/token",
+                    request,
+                    ZoomTokenResponse.class
+            );
+
+            ZoomTokenResponse tokens = response.getBody();
+            if (tokens != null) {
+                userTool.setAccessToken(tokens.getAccessToken());
+                userTool.setRefreshToken(tokens.getRefreshToken());
+                // Calculate the expiration date
+                Integer expiresIn = tokens.getExpiresIn(); // Get expires_in from the response
+                if (expiresIn != null) {
+                    Instant expiresAt = Instant.now().plusSeconds(expiresIn);
+                    userTool.setExpiresAt(expiresAt); // Update expiration time
+                }
+                return tokens.getAccessToken();
             }
-            return sessionIds;
-        } else {
-            System.err.println("Failed to fetch contacts from Zoom.");
-            return null;
+        } catch (Exception e) {
+            e.printStackTrace();
         }
+
+        throw new RuntimeException("Failed to refresh Zoom token");
     }
 
-    // Get chat messages report
-    public String getMessageReport(String accessToken, String sessionId, LocalDate startDate, LocalDate endDate, ZoneId timeZone) {
-        String url = ZOOM_API_BASE_URL + "/report/chat/sessions/" + sessionId + "?from=" + formatDate(startDate) + "&to=" + formatDate(endDate);
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", "Bearer " + accessToken);
-        headers.set("Content-Type", "application/json");
-
-        HttpEntity<String> entity = new HttpEntity<>(headers);
-        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, entity, String.class);
-
-        if (response.getStatusCode() == HttpStatus.OK) {
-            return response.getBody();
-        } else {
-            System.err.println("Failed to fetch messages for contact: " + sessionId);
-            return "";
-        }
-    }
-
-    // Format date
-    public String formatDate(LocalDate date) {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-        return date.format(formatter);
-    }
 }
